@@ -1,0 +1,53 @@
+![Banner](./banner.png)
+
+# 𝓔𝓷𝓬𝓸𝓭𝓮‑2025
+A concise, elegant project README with clear scope, tech stack, and usage.
+
+## ✨ Overview
+This project aims to provide a lightweight, extensible toolkit for encoding/transforming data streams and file formats with an emphasis on performance, clarity, and testability.
+
+## 🎯 Project Scope
+- Core encoding/decoding primitives and pipelines
+- Pluggable adapters for file formats and protocols
+- Simple CLI and library APIs for embedding in other projects
+- CI tests, benchmarks, and examples
+
+## 🧩 Technologies Used
+- ⚡ Rust — core engine for speed and safety  
+- 🔧 Node.js/TypeScript — CLI and tooling glue  
+- 🧪 GitHub Actions — CI & automated tests  
+- 📦 TOML / JSON — configuration formats
+
+## 🚀 Quick Start
+Clone, build, run tests:
+```bash
+git clone <repo-url>
+cd repo
+# build (example for Rust)
+cargo build --release
+# run tests
+cargo test
+```
+
+## 🧭 Usage (example)
+- Library: import the crate/module and call Encoder::new(...)  
+- CLI: ./encode2025 --input file.bin --format json --output out.json
+
+## 🤝 Contributing
+- Fork, branch, add tests, open a PR with a clear description.  
+- Follow code style and include small, focused commits.
+
+## 📁 Files of interest
+- ./src/ — core implementation  
+- ./cli/ — command-line interface  
+- ./examples/ — usage examples and sample pipelines  
+- ./bench/ — benchmarks
+
+## 📜 License
+Specify your license (e.g., MIT / Apache‑2.0) in LICENSE file.
+
+## ✉️ Contact
+Open issues or PRs on the repository. For design discussions, create an issue with the "discussion" tag.
+
+---
+Banner: ./banner.png
