@@ -1,145 +1,120 @@
 import Text "mo:base/Text";
-import Iter "mo:base/Iter";
+import Char "mo:base/Char";
 import Nat "mo:base/Nat";
-import Array "mo:base/Array";
+import Int "mo:base/Int";
+import Float "mo:base/Float";
+import Debug "mo:base/Debug";
 
 module {
-  // Simple JSON parser for extracting price values from proxy API responses
-  // Handles responses from: https://envio-proxy-kevinc.pythonanywhere.com
+  public type JSONValue = {
+    #string : Text;
+    #number : Float;
+    #object : [(Text, JSONValue)];
+    #array : [JSONValue];
+    #bool : Bool;
+    #null;
+  };
 
-  // Extract value from single price response
-  // Format: {"success": true, "price": {"value": 111373, ...}}
-  public func parseSinglePrice(json : Text) : ?Nat {
-    // Find "value": followed by a number
-    let valuePattern = "\"value\":";
-    
-    let parts = Iter.toArray(Text.split(json, #text valuePattern));
-    if (parts.size() < 2) {
-      return null;
+  public func parse(json : Text) : JSONValue {
+    let chars = Text.toIter(json);
+    let firstChar = switch (chars.next()) {
+      case (?c) { c };
+      case (null) { Debug.trap("Empty JSON string") };
     };
-    
-    let afterValue = parts[1];
-    
-    // Extract the number (until comma, closing brace, or space)
-    var numStr = "";
-    for (char in afterValue.chars()) {
-      switch (char) {
-        case ('0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9' or '.') {
-          numStr #= Text.fromChar(char);
+    parseValue(firstChar, chars);
+  };
+
+  func parseValue(firstChar : Char, chars : Text.Iter) : JSONValue {
+    switch (firstChar) {
+      case ('"') { #string(parseString(chars)) };
+      case ('{') { #object(parseObject(chars)) };
+      case ('[') { #array(parseArray(chars)) };
+      case ('t') { #bool(true) };
+      case ('f') { #bool(false) };
+      case ('n') { #null };
+      case (c) {
+        if (Char.isDigit(c) or c == '-') {
+          #number(parseNumber(c, chars));
+        } else {
+          Debug.trap("Unexpected character: " # debug_show (c));
         };
-        case (' ' or ',' or '}' or '\n' or '\r') {
-          if (numStr != "") {
-            // We've collected the number, stop here
-            return textToNat(numStr);
+      };
+    };
+  };
+
+  func parseString(chars : Text.Iter) : Text {
+    var result = "";
+    var done = false;
+    while (not done) {
+      switch (chars.next()) {
+        case (?'"') { done := true };
+        case (?c) { result #= Char.toText(c) };
+        case (null) { Debug.trap("Unterminated string") };
+      };
+    };
+    result;
+  };
+
+  func parseNumber(firstChar : Char, chars : Text.Iter) : Float {
+    var result = Char.toText(firstChar);
+    var done = false;
+    while (not done) {
+      switch (chars.next()) {
+        case (?c) {
+          if (Char.isDigit(c) or c == '.' or c == 'e' or c == 'E' or c == '-' or c == '+') {
+            result #= Char.toText(c);
+          } else {
+            done := true;
           };
         };
-        case _ {
-          if (numStr != "") {
-            // We hit a non-numeric char after collecting digits
-            return textToNat(numStr);
+        case (null) { done := true };
+      };
+    };
+    switch (Float.fromText(result)) {
+      case (?f) { f };
+      case (null) { Debug.trap("Invalid number: " # result) };
+    };
+  };
+
+  func parseObject(chars : Text.Iter) : [(Text, JSONValue)] {
+    var result : [(Text, JSONValue)] = [];
+    var done = false;
+    while (not done) {
+      switch (chars.next()) {
+        case (?'}') { done := true };
+        case (?'"') {
+          let key = parseString(chars);
+          switch (chars.next()) {
+            case (?:) {
+              let value = parseValue(chars.next(), chars);
+              result := result # [(key, value)];
+            };
+            case (null) { Debug.trap("Unterminated object") };
           };
         };
-      };
-    };
-    
-    // Convert what we collected
-    if (numStr != "") {
-      textToNat(numStr);
-    } else {
-      null;
-    };
-  };
-
-  // Extract value from multi-price response for a specific currency
-  // Format: {"success": true, "prices": {"BTC": {"value": 111371, ...}}}
-  public func parseMultiPrice(json : Text, currency : Text) : ?Nat {
-    // Find the currency block: "BTC": {"value": or "BTC":{"value":
-    let pattern1 = "\"" # currency # "\":{\"value\":";
-    let pattern2 = "\"" # currency # "\": {\"value\":";
-    let pattern3 = "\"" # currency # "\": { \"value\":";
-    
-    // Try different spacing patterns
-    let patterns = [pattern1, pattern2, pattern3];
-    
-    for (pattern in patterns.vals()) {
-      let parts = Iter.toArray(Text.split(json, #text pattern));
-      if (parts.size() >= 2) {
-        let afterPattern = parts[1];
-        
-        // Extract the number
-        var numStr = "";
-        for (char in afterPattern.chars()) {
-          switch (char) {
-            case ('0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9' or '.') {
-              numStr #= Text.fromChar(char);
-            };
-            case (' ' or ',' or '}' or '\n' or '\r') {
-              if (numStr != "") {
-                return textToNat(numStr);
-              };
-            };
-            case _ {
-              if (numStr != "") {
-                return textToNat(numStr);
-              };
-            };
+        case (?c) {
+          if (not Char.isWhitespace(c)) {
+            Debug.trap("Unexpected character in object: " # debug_show (c));
           };
         };
-        
-        if (numStr != "") {
-          return textToNat(numStr);
+        case (null) { Debug.trap("Unterminated object") };
+      };
+    };
+    result;
+  };
+
+  func parseArray(chars : Text.Iter) : [JSONValue] {
+    var result : [JSONValue] = [];
+    var done = false;
+    while (not done) {
+      switch (chars.next()) {
+        case (?']') { done := true };
+        case (?c) {
+          result := result # [parseValue(c, chars)];
         };
+        case (null) { Debug.trap("Unterminated array") };
       };
     };
-    
-    null;
+    result;
   };
-
-  // Parse any price response (tries both formats)
-  public func parsePrice(json : Text, currency : Text) : ?Nat {
-    // Try single price format first
-    switch (parseSinglePrice(json)) {
-      case (?price) { ?price };
-      case null {
-        // Try multi-price format
-        parseMultiPrice(json, currency);
-      };
-    };
-  };
-
-  // Helper: Convert text to Nat (handles decimals by truncating)
-  private func textToNat(text : Text) : ?Nat {
-    if (text == "") { return null };
-    
-    // Split on decimal point if present
-    let parts = Iter.toArray(Text.split(text, #char '.'));
-    let intPart = parts[0];
-    
-    if (intPart == "") { return null };
-    
-    // Convert integer part to Nat
-    var n : Nat = 0;
-    for (char in intPart.chars()) {
-      let digit = switch (char) {
-        case '0' { 0 };
-        case '1' { 1 };
-        case '2' { 2 };
-        case '3' { 3 };
-        case '4' { 4 };
-        case '5' { 5 };
-        case '6' { 6 };
-        case '7' { 7 };
-        case '8' { 8 };
-        case '9' { 9 };
-        case _ { return null };
-      };
-      n := n * 10 + digit;
-    };
-    ?n;
-  };
-
-  // Check if response indicates success
-  public func isSuccessResponse(json : Text) : Bool {
-    Text.contains(json, #text "\"success\":true") or Text.contains(json, #text "\"success\": true");
-  };
-}
+};

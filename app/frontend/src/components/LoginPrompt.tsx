@@ -145,12 +145,10 @@ export default function LoginPrompt() {
         <div className="mx-auto max-w-6xl">
           <div className="mb-8 sm:mb-12 text-center animate-fade-scale">
             <img
-              src="/assets/generated/greencart-banner.dim_800x400.png"
+              src="/assets/GreenCartLul.png"
               alt="GreenCart - Greenlight crypto in your shop"
               className="mx-auto mb-6 sm:mb-8 rounded-2xl shadow-2xl hover:shadow-glow-lg transition-all duration-500 hover:scale-105 animate-float max-w-full h-auto"
               loading="eager"
-              width="800"
-              height="400"
             />
             <h1 className="mb-4 text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent font-header animate-gradient px-4">
               GreenCart

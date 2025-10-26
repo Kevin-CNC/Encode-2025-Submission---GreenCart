@@ -1,8 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useGetMerchantTransactions, useIsCallerAdmin, useGetTotalConfirmedValue, useGetTotalPendingValue } from '../../hooks/useQueries';
-import { TrendingUp, DollarSign, Clock, CheckCircle, AlertCircle, Shield, Zap } from 'lucide-react';
+import { useGetMerchantTransactions, useIsCallerAdmin, useGetTotalConfirmedValue, useGetTotalPendingValue, useFetchDynamicPrices, useProxyHealthCheck, useGetMerchantConfig } from '../../hooks/useQueries';
+import { TrendingUp, DollarSign, Clock, CheckCircle, AlertCircle, Shield, Zap, RefreshCw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 
 export default function OverviewTab() {
   const { data: isAdmin } = useIsCallerAdmin();
@@ -10,6 +11,16 @@ export default function OverviewTab() {
   const { data: transactions, isLoading } = useGetMerchantTransactions(merchantId);
   const { data: totalConfirmedValue, isLoading: loadingConfirmedValue, error: confirmedValueError } = useGetTotalConfirmedValue(merchantId);
   const { data: totalPendingValue, isLoading: loadingPendingValue, error: pendingValueError } = useGetTotalPendingValue(merchantId);
+  const { data: merchantConfig } = useGetMerchantConfig(merchantId);
+  const { data: proxyHealthy } = useProxyHealthCheck();
+  
+  // Fetch dynamic prices if conversion mode is Dynamic
+  const useDynamicRates = merchantConfig?.conversionSettings === 'Dynamic';
+  const { data: dynamicPrices, isLoading: loadingDynamicPrices, error: dynamicPricesError, refetch: refetchPrices } = useFetchDynamicPrices(
+    ['BTC', 'ETH', 'ICP', 'PLT'],
+    'USD',
+    useDynamicRates && !!proxyHealthy
+  );
 
   if (!isAdmin) {
     return (
@@ -56,7 +67,7 @@ export default function OverviewTab() {
     {
       title: 'Confirmed Volume',
       value: loadingConfirmedValue ? 'Loading...' : confirmedValueError ? 'Error' : `$${(confirmedAmount / 100).toFixed(2)}`,
-      subtitle: 'USD equivalent via shared backend (confirmed only)',
+      subtitle: 'USD equivalent via static rates (confirmed only)',
       icon: DollarSign,
       gradient: 'from-teal-500 to-cyan-500',
     },
@@ -82,7 +93,7 @@ export default function OverviewTab() {
         <Alert className="border-destructive/50 bg-destructive/5 animate-bounce-in">
           <AlertCircle className="h-4 w-4 text-destructive" />
           <AlertDescription className="text-destructive">
-            Conversion unavailable, please try again later. Unable to fetch live rates from shared backend.
+            Unable to calculate conversion values. Please check backend configuration.
           </AlertDescription>
         </Alert>
       )}
@@ -121,17 +132,17 @@ export default function OverviewTab() {
               {
                 step: 1,
                 title: 'Configure Your Settings',
-                description: 'Go to the Configuration tab to set up supported cryptocurrencies and preferred fiat currency. The shared backend handles all API keys and credentials automatically.',
+                description: 'Go to the Configuration tab to set up supported cryptocurrencies and preferred fiat currency. Static conversion rates are pre-configured for reliable pricing.',
               },
               {
                 step: 2,
                 title: 'Test a Payment',
-                description: 'Create a test transaction to ensure everything is working correctly with live conversion rates from the shared backend before going live.',
+                description: 'Create a test transaction to ensure everything is working correctly with static conversion rates before going live.',
               },
               {
                 step: 3,
                 title: 'Monitor Transactions',
-                description: 'Use the Transactions tab to track all payments with real-time conversion data, view status updates, and export data for accounting.',
+                description: 'Use the Transactions tab to track all payments with static conversion data, view status updates, and export data for accounting.',
               },
               {
                 step: 4,
@@ -159,34 +170,102 @@ export default function OverviewTab() {
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="animate-slide-up hover:shadow-glow transition-all duration-500" style={{ animationDelay: '0.9s' }}>
-          <CardHeader>
-            <CardTitle className="font-header">Supported Cryptocurrencies</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="font-header">Cryptocurrency Rates</CardTitle>
+              <CardDescription className="text-xs mt-1">
+                {useDynamicRates ? 'Real-time rates via HyperIndex' : 'Static pre-configured rates'}
+              </CardDescription>
+            </div>
+            {useDynamicRates && proxyHealthy && (
+              <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/50">
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Live
+              </Badge>
+            )}
           </CardHeader>
           <CardContent>
+            {useDynamicRates && dynamicPricesError && (
+              <Alert className="mb-4 border-yellow-500/50 bg-yellow-500/5">
+                <AlertCircle className="h-4 w-4 text-yellow-500" />
+                <AlertDescription className="text-xs">
+                  Unable to fetch dynamic rates. Displaying static rates as fallback.
+                </AlertDescription>
+              </Alert>
+            )}
             <div className="space-y-3">
               {[
-                { symbol: '₿', name: 'Bitcoin', code: 'BTC', gradient: 'from-orange-500 to-yellow-500' },
-                { symbol: 'Ξ', name: 'Ethereum', code: 'ETH', gradient: 'from-purple-500 to-blue-500' },
-                { symbol: '∞', name: 'Internet Computer', code: 'ICP', gradient: 'from-pink-500 to-purple-500' },
-                { symbol: 'P', name: 'Concordium PLT', code: 'PLT Stablecoin', gradient: 'from-green-500 to-emerald-600' },
-              ].map((crypto, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-all duration-300 hover:scale-105 hover:shadow-glow group animate-fade-scale"
-                  style={{ animationDelay: `${1 + index * 0.1}s` }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`h-10 w-10 rounded-full bg-gradient-to-br ${crypto.gradient} flex items-center justify-center text-white font-bold transition-all duration-300 group-hover:scale-110 group-hover:rotate-12`}>
-                      {crypto.symbol}
+                { 
+                  symbol: '₿', 
+                  name: 'Bitcoin', 
+                  code: 'BTC', 
+                  staticRate: '$65,000', 
+                  gradient: 'from-orange-500 to-yellow-500' 
+                },
+                { 
+                  symbol: 'Ξ', 
+                  name: 'Ethereum', 
+                  code: 'ETH', 
+                  staticRate: '$3,500', 
+                  gradient: 'from-purple-500 to-blue-500' 
+                },
+                { 
+                  symbol: '∞', 
+                  name: 'Internet Computer', 
+                  code: 'ICP', 
+                  staticRate: '$12', 
+                  gradient: 'from-pink-500 to-purple-500' 
+                },
+                { 
+                  symbol: 'P', 
+                  name: 'Concordium PLT', 
+                  code: 'PLT Stablecoin', 
+                  staticRate: '$0.50', 
+                  gradient: 'from-green-500 to-emerald-600' 
+                },
+              ].map((crypto, index) => {
+                const dynamicPrice = dynamicPrices?.prices?.[crypto.code === 'PLT Stablecoin' ? 'PLT' : crypto.code];
+                const displayRate = useDynamicRates && dynamicPrice 
+                  ? dynamicPrice.formatted 
+                  : crypto.staticRate;
+                const rateLabel = useDynamicRates && dynamicPrice 
+                  ? `Live (${dynamicPrices.source})`
+                  : 'Static rate';
+                
+                return (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-all duration-300 hover:scale-105 hover:shadow-glow group animate-fade-scale"
+                    style={{ animationDelay: `${1 + index * 0.1}s` }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`h-10 w-10 rounded-full bg-gradient-to-br ${crypto.gradient} flex items-center justify-center text-white font-bold transition-all duration-300 group-hover:scale-110 group-hover:rotate-12`}>
+                        {crypto.symbol}
+                      </div>
+                      <div>
+                        <p className="font-semibold">{crypto.name}</p>
+                        <p className="text-xs text-muted-foreground">{crypto.code}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold">{crypto.name}</p>
-                      <p className="text-xs text-muted-foreground">{crypto.code}</p>
+                    <div className="text-right">
+                      {loadingDynamicPrices && useDynamicRates ? (
+                        <Skeleton className="h-5 w-20" />
+                      ) : (
+                        <>
+                          <p className="text-sm font-semibold text-primary">{displayRate}</p>
+                          <p className="text-xs text-muted-foreground">{rateLabel}</p>
+                        </>
+                      )}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
+            {useDynamicRates && dynamicPrices && (
+              <p className="text-xs text-muted-foreground mt-4 text-center">
+                Last updated: {new Date(dynamicPrices.timestamp).toLocaleString()}
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -199,7 +278,7 @@ export default function OverviewTab() {
             <ul className="space-y-3">
               {[
                 { icon: CheckCircle, text: 'Multi-crypto support (BTC, ETH, ICP, PLT)' },
-                { icon: Zap, text: 'Real-time price conversion with live rates' },
+                { icon: Zap, text: 'Static conversion rates for reliable pricing' },
                 { icon: CheckCircle, text: 'Instant payment confirmation' },
                 { icon: Shield, text: 'Secure wallet integration with QR codes' },
                 { icon: CheckCircle, text: 'Test mode for safe plugin evaluation' },

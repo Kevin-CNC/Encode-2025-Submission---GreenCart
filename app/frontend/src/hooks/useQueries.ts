@@ -169,7 +169,7 @@ export function useHealthCheck() {
     },
     enabled: !!actor && !isFetching,
     retry: 3,
-    retryDelay: (attemptIndex) => {
+    retryDelay: (attemptIndex: number) => {
       const delay = Math.min(1000 * 2 ** attemptIndex, 10000);
       log('WARN', 'HEALTH', `Retrying health check (attempt ${attemptIndex + 1})`, { delay });
       return delay;
@@ -391,33 +391,6 @@ export function useUpdatePaymentStatus() {
   });
 }
 
-export function useFetchExchangeRates() {
-  const { actor } = useActor();
-
-  return useMutation({
-    mutationFn: async () => {
-      log('INFO', 'RATE', 'Fetching exchange rates from Envio HyperIndex proxy');
-      if (!actor) {
-        log('ERROR', 'RATE', 'Actor not available for fetchExchangeRates');
-        throw new Error('Actor not available');
-      }
-      
-      try {
-        const result = await actor.fetchExchangeRates();
-        log('INFO', 'RATE', 'Successfully fetched exchange rates', { responseLength: result.length });
-        return result;
-      } catch (error: any) {
-        log('ERROR', 'RATE', 'Failed to fetch exchange rates', { error: error.message });
-        throw error;
-      }
-    },
-    onError: (error: Error) => {
-      log('ERROR', 'STATE', 'Exchange rates fetch mutation failed', { error: error.message });
-      toast.error(`Failed to fetch exchange rates: ${error.message}`);
-    },
-  });
-}
-
 export function useStoreExchangeRate() {
   const { actor } = useActor();
 
@@ -507,55 +480,45 @@ export function useGetTotalPendingValue(merchantId: string) {
   });
 }
 
-// Get live conversion rate from Envio HyperIndex proxy (backend handles proxy URL)
-// LOGGING: Conversion rate fetches are logged with retry attempts for debugging rate availability
-export function useGetLiveConversionRate(currency: string, enabled = true) {
+// Get static conversion rate
+// LOGGING: Static conversion rate fetches are logged for debugging rate availability
+export function useGetStaticConversionRate(currency: string, enabled = true) {
   const { actor, isFetching } = useActor();
 
-  return useQuery<bigint>({
-    queryKey: ['liveConversionRate', currency],
+  return useQuery<number>({
+    queryKey: ['staticConversionRate', currency],
     queryFn: async () => {
-      log('INFO', 'RATE', 'Fetching live conversion rate from Envio HyperIndex proxy', { currency });
+      log('INFO', 'RATE', 'Fetching static conversion rate', { currency });
       if (!actor) {
-        log('ERROR', 'RATE', 'Actor not available for getLiveConversionRate');
+        log('ERROR', 'RATE', 'Actor not available for getStaticConversionRate');
         throw new Error('Actor not available');
       }
       
       try {
-        const result = await actor.getLiveConversionRate(currency);
-        log('INFO', 'RATE', 'Successfully fetched live conversion rate', { 
+        const result = await actor.getStaticConversionRate(currency);
+        log('INFO', 'RATE', 'Successfully fetched static conversion rate', { 
           currency, 
           rate: result.toString() 
         });
         return result;
       } catch (error: any) {
-        if (error.message?.includes('Conversion unavailable')) {
-          log('WARN', 'RATE', 'Conversion unavailable from Envio HyperIndex proxy', { currency });
-          throw new Error('Conversion unavailable, please try again later');
-        }
-        log('ERROR', 'RATE', 'Failed to fetch live conversion rate', { currency, error: error.message });
+        log('ERROR', 'RATE', 'Failed to fetch static conversion rate', { currency, error: error.message });
         throw error;
       }
     },
     enabled: !!actor && !isFetching && !!currency && enabled,
-    retry: 3,
-    retryDelay: (attemptIndex) => {
-      const delay = Math.min(1000 * 2 ** attemptIndex, 5000);
-      log('WARN', 'RATE', `Retrying conversion rate fetch (attempt ${attemptIndex + 1})`, { currency, delay });
-      return delay;
-    },
-    staleTime: 10000,
+    staleTime: Infinity, // Static rates don't change
   });
 }
 
-// Convert amount using live rate from Envio HyperIndex proxy (backend handles proxy URL)
+// Convert amount using static rate
 // LOGGING: Amount conversions are logged for transaction processing visibility
 export function useConvertAmount() {
   const { actor } = useActor();
 
   return useMutation({
     mutationFn: async ({ amount, currency }: { amount: bigint; currency: string }) => {
-      log('INFO', 'RATE', 'Converting amount via Envio HyperIndex proxy', { amount: amount.toString(), currency });
+      log('INFO', 'RATE', 'Converting amount using static rate', { amount: amount.toString(), currency });
       if (!actor) {
         log('ERROR', 'RATE', 'Actor not available for convertAmount');
         throw new Error('Actor not available');
@@ -563,17 +526,13 @@ export function useConvertAmount() {
       
       try {
         const result = await actor.convertAmount(amount, currency);
-        log('INFO', 'RATE', 'Successfully converted amount', { 
+        log('INFO', 'RATE', 'Successfully converted amount using static rate', { 
           amount: amount.toString(), 
           currency, 
           convertedAmount: result.toString() 
         });
         return result;
       } catch (error: any) {
-        if (error.message?.includes('Conversion unavailable')) {
-          log('WARN', 'RATE', 'Conversion unavailable from Envio HyperIndex proxy', { amount: amount.toString(), currency });
-          throw new Error('Conversion unavailable, please try again later');
-        }
         log('ERROR', 'RATE', 'Failed to convert amount', { 
           amount: amount.toString(), 
           currency, 
@@ -583,13 +542,8 @@ export function useConvertAmount() {
       }
     },
     onError: (error: Error) => {
-      if (error.message.includes('Conversion unavailable')) {
-        log('WARN', 'STATE', 'Amount conversion unavailable');
-        toast.error('Conversion unavailable, please try again later');
-      } else {
-        log('ERROR', 'STATE', 'Amount conversion failed', { error: error.message });
-        toast.error(`Failed to convert amount: ${error.message}`);
-      }
+      log('ERROR', 'STATE', 'Amount conversion failed', { error: error.message });
+      toast.error(`Failed to convert amount: ${error.message}`);
     },
   });
 }
@@ -695,8 +649,8 @@ export function useProcessConcordiumPayment() {
   });
 }
 
-// Envio HyperIndex proxy integration hooks (backend handles proxy URL)
-// LOGGING: Envio HyperIndex operations are logged for blockchain data tracking
+// Envio integration hooks
+// LOGGING: Envio operations are logged for blockchain data tracking
 export function useGetEnvioConfig(merchantId: string) {
   const { actor, isFetching } = useActor();
 
@@ -745,7 +699,7 @@ export function useInitializeEnvioConfig() {
     onSuccess: () => {
       log('INFO', 'STATE', 'Invalidating envioConfig query cache');
       queryClient.invalidateQueries({ queryKey: ['envioConfig'] });
-      toast.success('Envio HyperIndex configuration saved');
+      toast.success('Envio configuration saved');
     },
     onError: (error: Error) => {
       log('ERROR', 'STATE', 'Envio config mutation failed', { error: error.message });
@@ -759,7 +713,7 @@ export function useFetchBlockchainHistory() {
 
   return useMutation({
     mutationFn: async ({ merchantId, currency }: { merchantId: string; currency: string }) => {
-      log('INFO', 'API', 'Fetching blockchain history via Envio HyperIndex proxy', { merchantId, currency });
+      log('INFO', 'API', 'Fetching blockchain history', { merchantId, currency });
       if (!actor) {
         log('ERROR', 'API', 'Actor not available for fetchBlockchainHistory');
         throw new Error('Actor not available');
@@ -775,7 +729,7 @@ export function useFetchBlockchainHistory() {
       }
     },
     onSuccess: () => {
-      toast.success('Blockchain history fetched via Envio HyperIndex');
+      toast.success('Blockchain history fetched');
     },
     onError: (error: Error) => {
       log('ERROR', 'STATE', 'Blockchain history fetch failed', { error: error.message });
@@ -812,10 +766,189 @@ export function useGetShopifyPluginConfig(merchantId: string) {
     },
     enabled: !!actor && !isFetching && !!merchantId,
     retry: 3,
-    retryDelay: (attemptIndex) => {
+    retryDelay: (attemptIndex: number) => {
       const delay = Math.min(1000 * 2 ** attemptIndex, 10000);
       log('WARN', 'API', `Retrying Shopify plugin config fetch (attempt ${attemptIndex + 1})`, { merchantId, delay });
       return delay;
     },
+  });
+}
+
+// Dynamic crypto price hooks via HyperIndex proxy server
+// LOGGING: Dynamic price fetches are logged for real-time rate monitoring
+const PROXY_SERVER_URL = (import.meta as any).env?.VITE_PROXY_URL || 'https://envio-proxy-kevinc.pythonanywhere.com';
+
+interface DynamicPrice {
+  value: number;
+  currency: string;
+  formatted: string;
+  source?: string;
+}
+
+interface DynamicPricesResponse {
+  success: boolean;
+  timestamp: string;
+  fiat: string;
+  prices: Record<string, DynamicPrice>;
+  source: string;
+}
+
+export function useFetchDynamicPrices(currencies?: string[], fiat: string = 'USD', enabled: boolean = true) {
+  return useQuery<DynamicPricesResponse>({
+    queryKey: ['dynamicPrices', currencies?.join(',') || 'BTC,ETH,ICP,PLT', fiat],
+    queryFn: async () => {
+      const currenciesParam = currencies?.join(',') || 'BTC,ETH,ICP,PLT';
+      log('INFO', 'PROXY', 'Fetching dynamic prices from HyperIndex proxy', { 
+        currencies: currenciesParam, 
+        fiat,
+        proxyUrl: PROXY_SERVER_URL 
+      });
+      
+      try {
+        const url = new URL('/prices', PROXY_SERVER_URL);
+        url.searchParams.set('currencies', currenciesParam);
+        url.searchParams.set('fiat', fiat);
+        url.searchParams.set('source', 'auto');
+        
+        const response = await fetch(url.toString(), {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.message || 'Failed to fetch prices');
+        }
+
+        log('INFO', 'PROXY', 'Successfully fetched dynamic prices', { 
+          source: data.source,
+          currencies: Object.keys(data.prices),
+          timestamp: data.timestamp 
+        });
+        
+        return data;
+      } catch (error: any) {
+        log('ERROR', 'PROXY', 'Failed to fetch dynamic prices', { 
+          error: error.message,
+          currencies: currenciesParam,
+          proxyUrl: PROXY_SERVER_URL 
+        });
+        throw error;
+      }
+    },
+    enabled,
+    staleTime: 60000, // 1 minute - prices should be refreshed frequently
+    refetchInterval: 120000, // Refetch every 2 minutes
+    retry: 3,
+    retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 10000),
+  });
+}
+
+export function useFetchDynamicPrice(currency: string, fiat: string = 'USD', enabled: boolean = true) {
+  return useQuery<number>({
+    queryKey: ['dynamicPrice', currency, fiat],
+    queryFn: async () => {
+      log('INFO', 'PROXY', 'Fetching single dynamic price from HyperIndex proxy', { 
+        currency, 
+        fiat,
+        proxyUrl: PROXY_SERVER_URL 
+      });
+      
+      try {
+        const url = new URL(`/price/${currency}`, PROXY_SERVER_URL);
+        url.searchParams.set('fiat', fiat);
+        
+        const response = await fetch(url.toString(), {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.message || 'Failed to fetch price');
+        }
+
+        const price = data.price?.value || 0;
+        
+        log('INFO', 'PROXY', 'Successfully fetched dynamic price', { 
+          currency,
+          price,
+          formatted: data.price?.formatted,
+          source: data.source 
+        });
+        
+        return price;
+      } catch (error: any) {
+        log('ERROR', 'PROXY', 'Failed to fetch dynamic price', { 
+          error: error.message,
+          currency,
+          proxyUrl: PROXY_SERVER_URL 
+        });
+        throw error;
+      }
+    },
+    enabled,
+    staleTime: 60000, // 1 minute
+    refetchInterval: 120000, // Refetch every 2 minutes
+    retry: 3,
+    retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 10000),
+  });
+}
+
+// Proxy server health check
+export function useProxyHealthCheck(enabled: boolean = true) {
+  return useQuery<boolean>({
+    queryKey: ['proxyHealth'],
+    queryFn: async () => {
+      log('INFO', 'PROXY', 'Checking HyperIndex proxy server health', { proxyUrl: PROXY_SERVER_URL });
+      
+      try {
+        const response = await fetch(`${PROXY_SERVER_URL}/health`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const isHealthy = data.status === 'healthy';
+        
+        log('INFO', 'PROXY', 'Proxy server health check result', { 
+          healthy: isHealthy,
+          service: data.service,
+          supportedCurrencies: data.supported_currencies 
+        });
+        
+        return isHealthy;
+      } catch (error: any) {
+        log('ERROR', 'PROXY', 'Proxy server health check failed', { 
+          error: error.message,
+          proxyUrl: PROXY_SERVER_URL 
+        });
+        return false;
+      }
+    },
+    enabled,
+    staleTime: 30000, // 30 seconds
+    refetchInterval: 60000, // Check every minute
+    retry: 2,
   });
 }

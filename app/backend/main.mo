@@ -1,6 +1,4 @@
 import AccessControl "authorization/access-control";
-import OutCall "http-outcalls/outcall";
-import JsonParser "json-parser";
 import Principal "mo:base/Principal";
 import OrderedMap "mo:base/OrderedMap";
 import Iter "mo:base/Iter";
@@ -9,7 +7,7 @@ import Text "mo:base/Text";
 import Nat "mo:base/Nat";
 import Time "mo:base/Time";
 import Int "mo:base/Int";
-import Error "mo:base/Error";
+import Float "mo:base/Float";
 
 actor ShopifyCryptoPlugin {
   // Initialize the user system state
@@ -98,7 +96,7 @@ actor ShopifyCryptoPlugin {
   // Exchange rate history
   public type ExchangeRate = {
     currency : Text;
-    rate : Nat;
+    rate : Float;
     timestamp : Int;
   };
 
@@ -183,53 +181,6 @@ actor ShopifyCryptoPlugin {
         Debug.trap("Transaction not found");
       };
     };
-  };
-
-  // Fetch real-time exchange rates from Envio HyperIndex via proxy
-  public query func transform(input : OutCall.TransformationInput) : async OutCall.TransformationOutput {
-    log("DEBUG", "Transforming HTTP response");
-    OutCall.transform(input);
-  };
-
-  // Helper function to try multiple endpoints
-  func tryEndpoints(endpoints : [Text], transform : OutCall.Transform) : async Text {
-    var lastError : ?Text = null;
-    for (endpoint in endpoints.vals()) {
-      log("INFO", "Trying endpoint: " # endpoint);
-      try {
-        let response = await OutCall.httpGetRequest(endpoint, [], transform);
-        if (response != "") {
-          log("INFO", "Successful response from endpoint: " # endpoint);
-          return response;
-        };
-      } catch (e) {
-        log("ERROR", "Error from endpoint " # endpoint # ": " # Error.message(e));
-        lastError := ?Error.message(e);
-      };
-    };
-    switch (lastError) {
-      case (?error) {
-        log("ERROR", "All endpoints failed. Last error: " # error);
-        Debug.trap("All endpoints failed. Last error: " # error);
-      };
-      case (null) {
-        log("ERROR", "All endpoints returned empty responses");
-        Debug.trap("All endpoints returned empty responses");
-      };
-    };
-  };
-
-  public shared func fetchExchangeRates() : async Text {
-    log("INFO", "Fetching exchange rates from multiple endpoints");
-    let endpoints = [
-      // Try with CoinGecko source first (most reliable)
-      "https://envio-proxy-kevinc.pythonanywhere.com/prices?currencies=BTC,ETH,ICP,PLT&fiat=USD&source=coingecko",
-      // Then try auto source (will attempt HyperIndex then fallback)
-      "https://envio-proxy-kevinc.pythonanywhere.com/prices?currencies=BTC,ETH,ICP,PLT&fiat=USD&source=auto",
-      // Finally just the basic endpoint
-      "https://envio-proxy-kevinc.pythonanywhere.com/prices?currencies=BTC,ETH,ICP,PLT&fiat=USD",
-    ];
-    await tryEndpoints(endpoints, transform);
   };
 
   // Store exchange rate
@@ -393,62 +344,42 @@ actor ShopifyCryptoPlugin {
     total;
   };
 
-  // Get live conversion rate from multiple endpoints with proper fallback
-  public shared func getLiveConversionRate(currency : Text) : async Nat {
-    log("INFO", "Fetching live conversion rate for currency: " # currency);
-    
-    // Try multiple endpoint formats in order of preference
-    let endpoints = [
-      // First try the single price endpoint (most reliable format)
-      "https://envio-proxy-kevinc.pythonanywhere.com/price/" # currency # "?fiat=USD",
-      // Then try the multi-price endpoint with CoinGecko source (most reliable)
-      "https://envio-proxy-kevinc.pythonanywhere.com/prices?currencies=" # currency # "&fiat=USD&source=coingecko",
-      // Fallback to auto source
-      "https://envio-proxy-kevinc.pythonanywhere.com/prices?currencies=" # currency # "&fiat=USD",
-    ];
-    
-    let response = await tryEndpoints(endpoints, transform);
+  // Get static conversion rate
+  public query func getStaticConversionRate(currency : Text) : async Float {
+    log("INFO", "Fetching static conversion rate for currency: " # currency);
 
-    // Check if we got a response
-    if (response == "") {
-      log("ERROR", "All endpoints failed for currency: " # currency);
-      // Return reasonable fallback prices
-      return getFallbackPrice(currency);
-    };
+    let staticRates = textMap.put(
+      textMap.put(
+        textMap.put(
+          textMap.put(
+            textMap.empty<Float>(),
+            "BTC",
+            65000.0,
+          ),
+          "ETH",
+          3500.0,
+        ),
+        "ICP",
+        12.0,
+      ),
+      "PLT",
+      0.5,
+    );
 
-    // Log the response for debugging
-    log("DEBUG", "API Response for " # currency # ": " # response);
-
-    // Parse the JSON response to extract the price
-    switch (JsonParser.parsePrice(response, currency)) {
-      case (?price) {
-        log("INFO", "Successfully parsed price for " # currency # ": " # Nat.toText(price));
-        price;
-      };
-      case null {
-        log("WARNING", "Failed to parse JSON response, using fallback price");
-        log("DEBUG", "Response was: " # response);
-        getFallbackPrice(currency);
+    switch (textMap.get(staticRates, currency)) {
+      case (?rate) { rate };
+      case (null) {
+        log("ERROR", "Static rate not found for currency: " # currency);
+        Debug.trap("Static rate not found for currency: " # currency);
       };
     };
   };
 
-  // Helper function to get fallback prices
-  private func getFallbackPrice(currency : Text) : Nat {
-    switch (currency) {
-      case "BTC" { 100000 }; // ~$100k
-      case "ETH" { 4000 };   // ~$4k
-      case "ICP" { 3 };      // ~$3
-      case "PLT" { 1 };      // ~$1 (stablecoin)
-      case _ { 1 };          // Default fallback
-    };
-  };
-
-  // Convert amount using live rate
-  public shared func convertAmount(amount : Nat, currency : Text) : async Nat {
+  // Convert amount using static rate
+  public shared func convertAmount(amount : Nat, currency : Text) : async Float {
     log("INFO", "Converting amount: " # Nat.toText(amount) # " " # currency);
-    let rate = await getLiveConversionRate(currency);
-    amount * rate;
+    let rate = await getStaticConversionRate(currency);
+    Float.fromInt(amount) * rate;
   };
 
   // Initialize default merchant config if not present
@@ -463,7 +394,7 @@ actor ShopifyCryptoPlugin {
           supportedCurrencies = ["BTC", "ETH", "ICP", "PLT"];
           preferredFiat = "USD";
           minConfirmations = 3;
-          conversionSettings = "HyperIndex";
+          conversionSettings = "Static";
         };
         merchantConfigs := textMap.put(merchantConfigs, defaultMerchantId, defaultConfig);
         log("INFO", "Default merchant config created for merchantId: " # defaultMerchantId);

@@ -6,8 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useGetMerchantConfig, useInitializeMerchantConfig, useIsCallerAdmin, useInitializeDefaultMerchantConfig } from '../../hooks/useQueries';
-import { Save, AlertCircle, Sparkles } from 'lucide-react';
+import { useGetMerchantConfig, useInitializeMerchantConfig, useIsCallerAdmin, useInitializeDefaultMerchantConfig, useProxyHealthCheck } from '../../hooks/useQueries';
+import { Save, AlertCircle, Sparkles, CheckCircle, XCircle } from 'lucide-react';
 import type { MerchantConfig } from '../../backend';
 
 // Logging configuration - set to false for production
@@ -27,11 +27,12 @@ export default function ConfigurationTab() {
   const { data: existingConfig, isLoading } = useGetMerchantConfig(merchantId);
   const { mutate: saveConfig, isPending } = useInitializeMerchantConfig();
   const { mutate: initializeDefaultConfig, isPending: isInitializing } = useInitializeDefaultMerchantConfig();
+  const { data: proxyHealthy, isLoading: proxyHealthLoading } = useProxyHealthCheck();
 
   const [supportedCurrencies, setSupportedCurrencies] = useState<string[]>(['BTC', 'ETH', 'ICP']);
   const [preferredFiat, setPreferredFiat] = useState('USD');
   const [minConfirmations, setMinConfirmations] = useState('3');
-  const [conversionSettings, setConversionSettings] = useState('HyperIndex');
+  const [conversionSettings, setConversionSettings] = useState('Static');
 
   useEffect(() => {
     if (existingConfig) {
@@ -104,6 +105,29 @@ export default function ConfigurationTab() {
 
   return (
     <div className="space-y-6">
+      {/* Proxy Server Health Status */}
+      {!proxyHealthLoading && (
+        <Alert className={`animate-bounce-in ${proxyHealthy ? 'border-green-500/50 bg-green-500/5' : 'border-yellow-500/50 bg-yellow-500/5'}`}>
+          {proxyHealthy ? (
+            <>
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <AlertDescription className="flex items-center justify-between">
+                <span>
+                  <strong>HyperIndex Proxy Online:</strong> Dynamic crypto rates are available from the Envio HyperIndex proxy server.
+                </span>
+              </AlertDescription>
+            </>
+          ) : (
+            <>
+              <XCircle className="h-4 w-4 text-yellow-500" />
+              <AlertDescription>
+                <strong>Dynamic Rates Unavailable:</strong> The HyperIndex proxy server is not responding. Using static conversion rates as fallback.
+              </AlertDescription>
+            </>
+          )}
+        </Alert>
+      )}
+
       {showConfigPrompt && (
         <Alert className="animate-bounce-in border-primary/50 bg-primary/5">
           <AlertCircle className="h-4 w-4 text-primary" />
@@ -136,14 +160,14 @@ export default function ConfigurationTab() {
       <Alert className="animate-bounce-in border-primary/50 bg-primary/5">
         <AlertCircle className="h-4 w-4 text-primary" />
         <AlertDescription>
-          Configure your crypto payment settings with HyperIndex for real-time conversion rates via proxy. Changes will apply to all new transactions.
+          Configure your crypto payment settings. Choose between static rates for consistent pricing or dynamic rates from HyperIndex for real-time market data. Changes will apply to all new transactions.
         </AlertDescription>
       </Alert>
 
       <Card className="animate-slide-up hover:shadow-glow transition-all duration-500" style={{ animationDelay: '0.1s' }}>
         <CardHeader>
           <CardTitle className="font-header">Supported Cryptocurrencies</CardTitle>
-          <CardDescription>Select which cryptocurrencies you want to accept with live HyperIndex rates</CardDescription>
+          <CardDescription>Select which cryptocurrencies you want to accept with static conversion rates</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
@@ -179,7 +203,7 @@ export default function ConfigurationTab() {
       <Card className="animate-slide-up hover:shadow-glow transition-all duration-500" style={{ animationDelay: '0.6s' }}>
         <CardHeader>
           <CardTitle className="font-header">Conversion Settings</CardTitle>
-          <CardDescription>Configure how crypto payments are converted to fiat using HyperIndex proxy</CardDescription>
+          <CardDescription>Configure how crypto payments are converted to fiat using static rates</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
@@ -230,13 +254,30 @@ export default function ConfigurationTab() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="HyperIndex">HyperIndex - Real-time conversion via proxy</SelectItem>
+                <SelectItem value="Static">Static - Pre-configured conversion rates</SelectItem>
+                <SelectItem value="Dynamic" disabled={!proxyHealthy}>
+                  Dynamic - Real-time rates via HyperIndex {!proxyHealthy && '(Unavailable)'}
+                </SelectItem>
                 <SelectItem value="Manual">Manual - Hold crypto and convert manually</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              HyperIndex provides instant, accurate conversion rates via proxy for all supported cryptocurrencies
+              {conversionSettings === 'Static' && 'Static mode uses pre-configured rates (BTC: $65,000, ETH: $3,500, ICP: $12, PLT: $0.50) for consistent and reliable pricing'}
+              {conversionSettings === 'Dynamic' && 'Dynamic mode fetches real-time crypto prices from the Envio HyperIndex proxy server via on-chain DEX data'}
+              {conversionSettings === 'Manual' && 'Manual mode holds cryptocurrency and allows you to convert at your preferred time'}
             </p>
+            {conversionSettings === 'Dynamic' && proxyHealthy && (
+              <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
+                <CheckCircle className="h-3 w-3" />
+                HyperIndex proxy is online and ready to provide real-time rates
+              </p>
+            )}
+            {conversionSettings === 'Dynamic' && !proxyHealthy && (
+              <p className="text-xs text-yellow-600 flex items-center gap-1 mt-1">
+                <AlertCircle className="h-3 w-3" />
+                HyperIndex proxy is unavailable. Please use Static mode or wait for proxy to come online.
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

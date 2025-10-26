@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsCallerAdmin, useHealthCheck } from '../../hooks/useQueries';
-import { CheckCircle, Copy, Download, ExternalLink, Plug, Shield, TrendingUp, Zap, AlertCircle, RefreshCw } from 'lucide-react';
+import { CheckCircle, Copy, Download, ExternalLink, Shield, Zap, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import ShopifyPluginExport from '../shopify/ShopifyPluginExport';
 
@@ -34,13 +34,13 @@ export default function IntegrationsTab() {
   const MERCHANT_ID = 'default-merchant';
   
   // Initialize the GreenCart crypto payment plugin
-  // Envio HyperIndex proxy is handled securely by the shared backend
+  // Static conversion rates are pre-configured in the backend
   // Concordium PLT Stablecoin is pre-configured and ready to use
   window.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('greencart-payment-plugin');
     if (container) {
       // Load your plugin component here
-      // The component fetches conversion rates from the shared backend via proxy
+      // The component uses static conversion rates from backend
       console.log('GreenCart plugin initialized - zero configuration required');
     }
   });
@@ -72,8 +72,8 @@ export default function IntegrationsTab() {
 
 <script>
   // GreenCart: Concordium PLT Stablecoin is pre-configured
-  // Envio HyperIndex provides real-time conversion rates via proxy through shared backend
-  // Proxy URL is never exposed - all security handled by backend
+  // Static conversion rates are pre-configured in the backend
+  // All credentials are securely managed by backend
   
   const orderTotal = {{ checkout.total_price | money_without_currency }};
   const currency = '{{ shop.currency }}';
@@ -87,7 +87,7 @@ export default function IntegrationsTab() {
     console.log('Age verification required for this product');
   }
   
-  // Initialize payment with live conversion rates from shared backend via proxy
+  // Initialize payment with static conversion rates from backend
   console.log('Order total:', orderTotal, currency);
 </script>`;
 
@@ -132,7 +132,7 @@ export default function IntegrationsTab() {
         <Alert className="animate-bounce-in border-green-500/50 bg-green-500/5">
           <CheckCircle className="h-4 w-4 text-green-500" />
           <AlertDescription className="text-xs sm:text-sm">
-            <strong>Backend Online:</strong> GreenCart's shared backend is accessible and ready to process payments.
+            <strong>Backend Online:</strong> GreenCart's shared backend is accessible and ready to process payments with static conversion rates.
           </AlertDescription>
         </Alert>
       )}
@@ -140,11 +140,11 @@ export default function IntegrationsTab() {
       <Alert className="animate-bounce-in border-primary/50 bg-primary/5">
         <Zap className="h-4 w-4 text-primary" />
         <AlertDescription className="text-xs sm:text-sm">
-          <strong>Zero Configuration Required!</strong> GreenCart's shared backend automatically handles all merchants with secure data isolation. No canister IDs, no API keys to manage - just install and start accepting crypto payments.
+          <strong>Zero Configuration Required!</strong> GreenCart's shared backend automatically handles all merchants with secure data isolation. Static conversion rates ensure consistent and reliable pricing. No API keys to manage - just install and start accepting crypto payments.
         </AlertDescription>
       </Alert>
 
-      <div className="grid gap-4 sm:gap-6 md:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
         {[
           {
             title: 'Shared Backend',
@@ -155,20 +155,12 @@ export default function IntegrationsTab() {
             statusColor: backendHealthy ? 'green' : 'red',
           },
           {
-            title: 'Envio HyperIndex',
-            description: 'Real-time conversion rates via proxy (pre-configured)',
-            icon: TrendingUp,
-            gradient: 'from-purple-500 to-pink-500',
-            status: backendHealthy ? 'Active' : 'Unavailable',
-            statusColor: backendHealthy ? 'green' : 'red',
-          },
-          {
-            title: 'Concordium PLT',
-            description: 'Privacy-preserving stablecoin payments',
-            icon: Plug,
+            title: 'Static Rates',
+            description: 'Pre-configured conversion rates for reliable pricing',
+            icon: Zap,
             gradient: 'from-green-500 to-emerald-600',
-            status: backendHealthy ? 'Active' : 'Unavailable',
-            statusColor: backendHealthy ? 'green' : 'red',
+            status: 'Active',
+            statusColor: 'green',
           },
         ].map((integration, index) => (
           <Card
@@ -201,11 +193,49 @@ export default function IntegrationsTab() {
         ))}
       </div>
 
-      <Card className="animate-slide-up hover:shadow-glow transition-all duration-500" style={{ animationDelay: '0.3s' }}>
+      <Card className="animate-slide-up hover:shadow-glow transition-all duration-500" style={{ animationDelay: '0.2s' }}>
+        <CardHeader>
+          <CardTitle className="font-header text-lg sm:text-xl">Static Conversion Rates</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
+            GreenCart uses pre-configured static rates for consistent and reliable pricing
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[
+              { currency: 'BTC', name: 'Bitcoin', rate: '$65,000.00', gradient: 'from-orange-500 to-yellow-500' },
+              { currency: 'ETH', name: 'Ethereum', rate: '$3,500.00', gradient: 'from-purple-500 to-blue-500' },
+              { currency: 'ICP', name: 'Internet Computer', rate: '$12.00', gradient: 'from-pink-500 to-purple-500' },
+              { currency: 'PLT', name: 'Concordium PLT', rate: '$0.50', gradient: 'from-green-500 to-emerald-600' },
+            ].map((item, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50 hover:bg-muted/50 transition-all duration-300 hover:scale-105 animate-fade-scale"
+                style={{ animationDelay: `${0.3 + index * 0.1}s` }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`h-8 w-8 rounded-full bg-gradient-to-br ${item.gradient} flex items-center justify-center text-white font-bold text-xs`}>
+                    {item.currency.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">{item.currency}</p>
+                  </div>
+                </div>
+                <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/50">
+                  {item.rate}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="animate-slide-up hover:shadow-glow transition-all duration-500" style={{ animationDelay: '0.7s' }}>
         <CardHeader>
           <CardTitle className="font-header text-lg sm:text-xl">Shopify Integration</CardTitle>
           <CardDescription className="text-xs sm:text-sm">
-            One-click installation with zero configuration. GreenCart's shared backend automatically handles all security, API keys, and merchant data isolation.
+            One-click installation with zero configuration. GreenCart's shared backend automatically handles all security and static conversion rates.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 sm:space-y-6">
@@ -219,16 +249,16 @@ export default function IntegrationsTab() {
             <TabsContent value="preview" className="space-y-4 mt-4">
               <div className="p-4 sm:p-6 bg-muted/30 rounded-lg border border-border/50">
                 <p className="text-xs sm:text-sm text-muted-foreground mb-4">
-                  Live preview of the GreenCart Shopify plugin with shared backend integration:
+                  Live preview of the GreenCart Shopify plugin with static conversion rates:
                 </p>
                 <div className="flex justify-center">
                   <ShopifyPluginExport merchantId="default-merchant" />
                 </div>
               </div>
               <Alert className="border-blue-500/50 bg-blue-500/5">
-                <TrendingUp className="h-4 w-4 text-blue-500" />
+                <Zap className="h-4 w-4 text-blue-500" />
                 <AlertDescription className="text-xs sm:text-sm text-blue-600 dark:text-blue-400">
-                  This component fetches conversion rates from GreenCart's shared backend via Envio HyperIndex proxy, which securely handles all proxy URLs and credentials. Zero configuration required for merchants.
+                  This component uses static conversion rates from GreenCart's shared backend, which securely manages all configuration. Zero setup required for merchants.
                 </AlertDescription>
               </Alert>
             </TabsContent>
@@ -254,7 +284,7 @@ export default function IntegrationsTab() {
                   <li>Copy the generated code (no configuration needed)</li>
                   <li>Add the code to your Shopify theme's checkout or product page</li>
                   <li>The plugin automatically connects to GreenCart's shared backend</li>
-                  <li>Conversion rates are fetched securely via Envio HyperIndex proxy (proxy URL never exposed)</li>
+                  <li>Static conversion rates are used for all transactions</li>
                   <li>Concordium PLT Stablecoin payments work out of the box</li>
                   <li>Test the integration with a small transaction</li>
                 </ol>
@@ -262,7 +292,7 @@ export default function IntegrationsTab() {
               <Alert className="border-green-500/50 bg-green-500/5">
                 <CheckCircle className="h-4 w-4 text-green-500" />
                 <AlertDescription className="text-xs sm:text-sm text-green-600 dark:text-green-400">
-                  <strong>Secure by Design:</strong> All sensitive credentials including proxy URLs are managed by GreenCart's shared backend. Merchants never see or handle API keys, proxy endpoints, canister IDs, or other sensitive data.
+                  <strong>Secure by Design:</strong> All sensitive credentials are managed by GreenCart's shared backend. Merchants never see or handle API keys, endpoints, canister IDs, or other sensitive data. Static rates ensure consistent pricing.
                 </AlertDescription>
               </Alert>
             </TabsContent>
@@ -319,7 +349,7 @@ export default function IntegrationsTab() {
         </CardContent>
       </Card>
 
-      <Card className="animate-slide-up hover:shadow-glow transition-all duration-500" style={{ animationDelay: '0.4s' }}>
+      <Card className="animate-slide-up hover:shadow-glow transition-all duration-500" style={{ animationDelay: '0.8s' }}>
         <CardHeader>
           <CardTitle className="font-header text-lg sm:text-xl">Security & Features</CardTitle>
         </CardHeader>
@@ -328,12 +358,14 @@ export default function IntegrationsTab() {
             {[
               'Zero configuration - no canister IDs or API keys to manage',
               'Shared backend with strict merchant data isolation',
-              'Envio HyperIndex proxy URL securely stored in backend - never exposed',
+              'Static conversion rates for consistent and reliable pricing',
+              'Pre-configured rates: BTC ($65k), ETH ($3.5k), ICP ($12), PLT ($0.50)',
+              'No external API dependencies - fully self-contained',
               'Automatic health checks and retry logic for reliability',
               'Comprehensive input validation and access control',
               'Age verification support via Shopify product tags and metafields',
               'Concordium PLT Stablecoin payments fully integrated',
-              'Real-time conversion rates via proxy with user-friendly error handling',
+              'Predictable conversion rates with user-friendly error handling',
               'Animated UI with smooth transitions and loading states',
               'Mobile-responsive design for all device sizes',
               'QR code support for mobile wallet payments',
@@ -342,7 +374,7 @@ export default function IntegrationsTab() {
               <li
                 key={index}
                 className="flex items-start gap-2 p-2 rounded-lg hover:bg-muted/50 transition-all duration-300 hover:scale-105 group animate-fade-scale text-xs sm:text-sm"
-                style={{ animationDelay: `${0.5 + index * 0.05}s` }}
+                style={{ animationDelay: `${0.9 + index * 0.05}s` }}
               >
                 <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0 mt-0.5 transition-all duration-300 group-hover:scale-125 group-hover:rotate-12" />
                 <span>{feature}</span>
@@ -352,11 +384,11 @@ export default function IntegrationsTab() {
         </CardContent>
       </Card>
 
-      <Card className="animate-slide-up hover:shadow-glow transition-all duration-500" style={{ animationDelay: '0.5s' }}>
+      <Card className="animate-slide-up hover:shadow-glow transition-all duration-500" style={{ animationDelay: '1.3s' }}>
         <CardHeader>
           <CardTitle className="font-header text-lg sm:text-xl">Architecture Benefits</CardTitle>
           <CardDescription className="text-xs sm:text-sm">
-            GreenCart's shared backend architecture provides enterprise-grade security and simplicity
+            GreenCart's shared backend architecture with static rates provides enterprise-grade security and reliability
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -378,15 +410,15 @@ export default function IntegrationsTab() {
             <div className="space-y-3">
               <h4 className="font-semibold text-sm sm:text-base font-header flex items-center gap-2">
                 <Zap className="h-4 w-4 text-primary" />
-                Simplicity
+                Reliability
               </h4>
               <ul className="space-y-2 text-xs sm:text-sm text-muted-foreground">
-                <li>• One-click installation</li>
-                <li>• Automatic merchant onboarding</li>
-                <li>• No backend configuration required</li>
-                <li>• Pre-configured integrations</li>
-                <li>• Instant deployment</li>
+                <li>• Static conversion rates for consistent pricing</li>
+                <li>• No external API dependencies</li>
+                <li>• Predictable and stable conversion values</li>
+                <li>• Zero network latency for rate fetching</li>
                 <li>• Built-in retry and error recovery</li>
+                <li>• Always returns expected conversion values</li>
               </ul>
             </div>
           </div>
