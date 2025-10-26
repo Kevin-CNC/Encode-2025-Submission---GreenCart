@@ -79,8 +79,7 @@ export default function IntegrationsTab() {
   const currency = '{{ shop.currency }}';
   
   // Age verification check
-  const requiresAgeVerification = {{ product.tags | json }}.includes('age-restricted') || 
-                                  '{{ product.metafields.custom.age_verification }}' === 'required';
+  const requiresAgeVerification = {{ product.tags | json }}.includes('age-restricted') || '{{ product.metafields.custom.age_verification }}' === 'required';
   
   if (requiresAgeVerification) {
     // Prompt for age verification before payment

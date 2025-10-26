@@ -5,6 +5,8 @@
 
 A revolutionary Shopify plugin that enables merchants to seamlessly accept cryptocurrency payments with privacy-preserving identity verification, real-time blockchain indexing, and enterprise-grade reliability.
 
+**Hosted @ : https://greencart-tyi.caffeine.xyz/ !**
+
 ## ✨ Overview
 GreenCart is a production-ready Shopify plugin that bridges traditional e-commerce with the crypto economy. Built on cutting-edge blockchain infrastructure, it provides merchants with a zero-configuration solution to accept Bitcoin (BTC), Ethereum (ETH), Internet Computer Protocol (ICP), and Concordium PLT Stablecoin payments directly in their Shopify stores.
 
@@ -132,11 +134,6 @@ We welcome contributions! Please:
 
 ## 📜 License
 [Specify your license - e.g., MIT / Apache-2.0]
-
-## ✉️ Contact
-- **Issues**: Report bugs or request features via GitHub Issues
-- **Discussions**: Join design discussions with the "discussion" tag
-- **Security**: Report vulnerabilities privately to [security contact]
 
 ---
 
