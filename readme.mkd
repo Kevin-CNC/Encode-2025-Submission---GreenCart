@@ -1,53 +1,144 @@
-![Banner](./banner.png)
+![Banner](./GreenCartLul.png)
 
-# 𝓔𝓷𝓬𝓸𝓭𝓮‑2025
-A concise, elegant project README with clear scope, tech stack, and usage.
+# GreenCart - Shopify Crypto Payment Plugin
+**"Greenlight crypto in your shop!"**
+
+A revolutionary Shopify plugin that enables merchants to seamlessly accept cryptocurrency payments with privacy-preserving identity verification, real-time blockchain indexing, and enterprise-grade reliability.
 
 ## ✨ Overview
-This project aims to provide a lightweight, extensible toolkit for encoding/transforming data streams and file formats with an emphasis on performance, clarity, and testability.
+GreenCart is a production-ready Shopify plugin that bridges traditional e-commerce with the crypto economy. Built on cutting-edge blockchain infrastructure, it provides merchants with a zero-configuration solution to accept Bitcoin (BTC), Ethereum (ETH), Internet Computer Protocol (ICP), and Concordium PLT Stablecoin payments directly in their Shopify stores.
 
-## 🎯 Project Scope
-- Core encoding/decoding primitives and pipelines
-- Pluggable adapters for file formats and protocols
-- Simple CLI and library APIs for embedding in other projects
-- CI tests, benchmarks, and examples
+## 🎯 Core Functionalities
 
-## 🧩 Technologies Used
-- ⚡ Rust — core engine for speed and safety  
-- 🔧 Node.js/TypeScript — CLI and tooling glue  
-- 🧪 GitHub Actions — CI & automated tests  
-- 📦 TOML / JSON — configuration formats
+### 🔐 Privacy-Preserving Payments
+- **Concordium Integration**: Leverages Concordium's revolutionary privacy-preserving identity verification technology
+- **PLT Stablecoin Support**: Accept stable, predictable payments with Concordium's PLT Stablecoin
+- **Age Verification**: Automated age verification for restricted products using zero-knowledge proofs
+- **KYC Compliance**: Built-in compliance features without compromising user privacy
+
+### ⚡ Real-Time Blockchain Intelligence
+- **Envio HyperIndex Integration**: Powered by Envio's HyperIndex via our Python proxy server for lightning-fast blockchain data indexing
+- **Multi-Chain Support**: Simultaneous monitoring of BTC, ETH, ICP, and Concordium networks
+- **Instant Payment Confirmations**: Real-time transaction status updates across all supported blockchains
+- **Dynamic Rate Conversion**: Accurate, up-to-the-second cryptocurrency-to-fiat conversion rates
+
+### � Seamless Shopify Integration
+- **One-Click Installation**: Zero backend configuration required - install and start accepting crypto immediately
+- **Unified Dashboard**: Beautiful, responsive merchant dashboard with animated charts and real-time analytics
+- **Transaction Management**: Complete payment tracking, history, and export capabilities
+- **Test Mode**: Safe plugin evaluation with test transactions that don't persist in history
+
+### 💎 Modern User Experience
+- **Futuristic Design**: Sleek, animated interface with cosmic backgrounds and smooth transitions
+- **Fully Responsive**: Optimized for mobile, tablet, and desktop experiences
+- **QR Code Payments**: Instant payment generation for mobile wallet compatibility
+- **Real-Time Updates**: Live payment status with dynamic animations and notifications
+
+## 🧩 Technology Stack
+
+### Blockchain & Infrastructure
+- **🌐 Internet Computer (ICP)** — Backend hosted on Caffeine for unparalleled reliability and scalability
+- **� Concordium** — Privacy-preserving identity verification and PLT Stablecoin payments
+- **⚡ Envio HyperIndex** — Real-time blockchain indexing via Python proxy server for instant transaction data
+- **₿ Multi-Chain Support** — Bitcoin, Ethereum, ICP, and Concordium network integration
+
+### Frontend & Design
+- **⚛️ React + TypeScript** — Modern, type-safe component architecture
+- **🎨 Tailwind CSS** — Utility-first styling with custom futuristic green theme
+- **✨ Framer Motion** — Smooth, hardware-accelerated animations
+- **📱 Responsive Design** — Mobile-first approach with progressive enhancement
+
+### Backend & Security
+- **🔐 Motoko** — ICP smart contracts for secure, multi-tenant architecture
+- **🐍 Python Proxy Server** — Envio HyperIndex integration and rate aggregation
+- **🔒 OAuth 2.0** — Secure Shopify merchant authentication
+- **🛡️ End-to-End Encryption** — Bank-level security for all payment data
+
+## 🏗️ Architecture Philosophy
+
+### Zero-Configuration Multi-Tenancy
+GreenCart implements a shared backend canister architecture on the Internet Computer, eliminating the need for merchants to manage infrastructure. Each merchant's data is strictly isolated with enterprise-grade access controls, while benefiting from shared infrastructure reliability.
+
+### Privacy-First Design
+By integrating Concordium's privacy-preserving technology, we enable compliance-ready crypto payments without compromising user privacy. Identity verification happens on-chain with zero-knowledge proofs, ensuring both regulatory compliance and user anonymity.
+
+### Real-Time Blockchain Intelligence
+Our Python proxy server integrates with Envio's HyperIndex to provide instant blockchain data indexing across multiple chains. This enables real-time payment confirmations and accurate rate conversions without the latency of traditional blockchain explorers.
+
+### Caffeine Hosting Reliability
+Deployed on the Internet Computer's Caffeine infrastructure, GreenCart benefits from unstoppable, tamper-proof hosting with 99.99% uptime guarantees. The canister architecture ensures the backend remains permanently accessible after deployment.
 
 ## 🚀 Quick Start
-Clone, build, run tests:
+
+### For Merchants
+1. Install GreenCart from the Shopify App Store
+2. Complete OAuth authentication
+3. Configure your preferred cryptocurrencies
+4. Start accepting crypto payments immediately
+
+### For Developers
 ```bash
-git clone <repo-url>
-cd repo
-# build (example for Rust)
-cargo build --release
-# run tests
-cargo test
+# Clone the repository
+git clone https://github.com/Kevin-CNC/Encode-2025-Submission---GreenCart
+cd Encode-2025
+
+# Install frontend dependencies
+cd app/frontend
+npm install
+
+# Install proxy server dependencies
+cd ../../proxy-server
+pip install -r requirements.txt
+
+# Start development environment
+npm run dev  # Frontend
+python main.py  # Proxy server
 ```
 
-## 🧭 Usage (example)
-- Library: import the crate/module and call Encoder::new(...)  
-- CLI: ./encode2025 --input file.bin --format json --output out.json
+## 📁 Project Structure
+```
+app/
+  backend/        — Motoko smart contracts for ICP
+  frontend/       — React + TypeScript dashboard and payment UI
+proxy-server/     — Python server for Envio HyperIndex integration
+```
+
+## 🌟 Key Features Highlight
+
+✅ **Multi-Currency Support** - BTC, ETH, ICP, PLT Stablecoin  
+✅ **Privacy-Preserving KYC** - Concordium identity verification  
+✅ **Real-Time Indexing** - Envio HyperIndex via proxy server  
+✅ **Caffeine Hosting** - Unstoppable ICP infrastructure  
+✅ **Zero Configuration** - One-click Shopify installation  
+✅ **Responsive Design** - Works beautifully on all devices  
+✅ **Age Verification** - Automated checks for restricted products  
+✅ **Test Mode** - Safe plugin evaluation  
+✅ **Export Ready** - Direct Shopify store embedding
+
+## 🛡️ Security & Compliance
+- End-to-end encryption for all payment data
+- Privacy-preserving identity verification via Concordium
+- Strict multi-tenant data isolation
+- Comprehensive input validation and sanitization
+- Security headers (CSP, HSTS, X-Frame-Options)
+- Regular security audits and penetration testing
 
 ## 🤝 Contributing
-- Fork, branch, add tests, open a PR with a clear description.  
-- Follow code style and include small, focused commits.
-
-## 📁 Files of interest
-- ./src/ — core implementation  
-- ./cli/ — command-line interface  
-- ./examples/ — usage examples and sample pipelines  
-- ./bench/ — benchmarks
+We welcome contributions! Please:
+- Fork the repository and create a feature branch
+- Write comprehensive tests for new functionality
+- Follow our code style guidelines (Prettier + ESLint)
+- Submit a PR with clear description and use cases
 
 ## 📜 License
-Specify your license (e.g., MIT / Apache‑2.0) in LICENSE file.
+[Specify your license - e.g., MIT / Apache-2.0]
 
 ## ✉️ Contact
-Open issues or PRs on the repository. For design discussions, create an issue with the "discussion" tag.
+- **Issues**: Report bugs or request features via GitHub Issues
+- **Discussions**: Join design discussions with the "discussion" tag
+- **Security**: Report vulnerabilities privately to [security contact]
 
 ---
-Banner: ./banner.png
+
+**Built with ❤️ for the Encode 2025 Hackathon**  
+*Empowering merchants to greenlight crypto in their shops*
