@@ -133,7 +133,7 @@ We welcome contributions! Please:
 - Submit a PR with clear description and use cases
 
 ## 📜 License
-[Specify your license - e.g., MIT / Apache-2.0]
+None, since it's a hackathon project!
 
 ---
 
